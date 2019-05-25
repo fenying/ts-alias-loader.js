@@ -20,33 +20,33 @@ const $M = require("module");
 
 const oldResolver = $M._resolveFilename;
 
-let prjDir: string;
-
 let prjCfg = {
-    "root": "",
+    "root": "" as string,
     "prefixes": {} as Record<string, string[]>,
     "maps": {} as Record<string, string[]>
 };
+
+let disabled = false;
 
 $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) {
 
     const baseDir = $path.dirname(parentModule.filename);
 
-    if (baseDir.includes("node_modules")) {
+    if (disabled || baseDir.includes("node_modules")) {
 
         return oldResolver.call(this, req, parentModule, isMain);
     }
 
-    if (!prjDir) {
+    if (!prjCfg.root) {
 
-        prjDir = baseDir;
+        prjCfg.root = baseDir;
 
         let configPath: string;
         let config: any;
 
         do {
 
-            configPath = $path.resolve(prjDir, "tsconfig.json");
+            configPath = $path.resolve(prjCfg.root, "tsconfig.json");
 
             if ($fs.existsSync(configPath)) {
 
@@ -58,41 +58,51 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
                 if (
                     !config.compilerOptions ||
                     !config.compilerOptions.baseUrl ||
-                    !config.compilerOptions.paths ||
-                    !config.compilerOptions.rootDir ||
-                    !config.compilerOptions.outDir
+                    !config.compilerOptions.paths
                 ) {
 
                     config = null;
-                }
-                else {
 
-                    config = config.compilerOptions;
+                    disabled = true;
+
+                    break;
+                }
+
+                config = config.compilerOptions;
+
+                if (!config.rootDir) {
+
+                    config.rootDir = ".";
+                }
+
+                if (!config.outDir) {
+
+                    config.outDir = config.rootDir;
                 }
 
                 break;
             }
 
-            const newDir = $path.resolve(prjDir, "..");
+            const newDir = $path.resolve(prjCfg.root, "..");
 
-            if (newDir === prjDir) {
+            if (newDir === prjCfg.root) {
 
                 break;
             }
 
-            prjDir = newDir;
+            prjCfg.root = newDir;
 
         } while (1);
 
-        if (!prjDir || !config) {
+        if (!prjCfg.root || !config) {
 
             return oldResolver.call(this, req, parentModule, isMain);
         }
 
         if (config.baseUrl) {
 
-            const rootDir = $path.resolve(prjDir, config.rootDir);
-            const outDir = $path.resolve(prjDir, config.outDir);
+            const rootDir = $path.resolve(prjCfg.root, config.rootDir);
+            const outDir = $path.resolve(prjCfg.root, config.outDir);
 
             for (const k in config.paths) {
 
@@ -100,7 +110,7 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
 
                     prjCfg.prefixes[k.slice(0, -1)] = config.paths[k].map(
                         (x: string) => $path.resolve(
-                            prjDir,
+                            prjCfg.root,
                             config.baseUrl,
                             x.slice(0, -1)
                         ).replace(rootDir, outDir)
@@ -110,7 +120,7 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
 
                     prjCfg.maps[k] = config.paths[k].map(
                         (x: string) => $path.resolve(
-                            prjDir,
+                            prjCfg.root,
                             config.baseUrl,
                             x
                         ).replace(rootDir, outDir)
