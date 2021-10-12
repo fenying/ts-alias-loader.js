@@ -1,15 +1,17 @@
 {
   "name": "ts-alias-loader",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A simple loader for TypeScript module alias on Node.js.",
   "main": "lib/index.js",
   "scripts": {
-    "prepare": "npm run rebuild",
+    "prepublishOnly": "npm run rebuild",
     "build": "tsc -v && tsc -p .",
     "build-watch": "tsc -v && tsc -w -p .",
     "rebuild": "npm run clean && npm run lint && npm run build",
     "clean": "rm -rf lib examples",
-    "lint": "tslint -p . -c tslint.json"
+    "lint": "eslint --ext ts src",
+    "typecheck": "tsc -p . --noEmit",
+    "prepare": "husky install && rm -rf node_modules/test-2 && cp -r test/test-2 node_modules/"
   },
   "keywords": [
     "typescript",
@@ -28,12 +30,17 @@
     "url": "https://github.com/fenying/ts-alias-loader.js/issues"
   },
   "homepage": "https://github.com/fenying/ts-alias-loader.js#readme",
-  "dependencies": {},
   "types": "lib/index.d.ts",
   "typings": "lib/index.d.ts",
   "devDependencies": {
-    "@types/node": "^12.0.2",
-    "typescript": "^3.4.5"
+    "@commitlint/cli": "^13.2.1",
+    "@commitlint/config-conventional": "^13.2.0",
+    "@types/node": "^16.10.3",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "husky": "^7.0.2",
+    "typescript": "^4.4.3"
   },
   "engines": {
     "node": ">=10.0.0"

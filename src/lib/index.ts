@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Angus.Fenying <fenying@litert.org>
+ * Copyright 2021 Angus.Fenying <fenying@litert.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,102 +14,122 @@
  * limitations under the License.
  */
 
-import * as $path from "path";
-import * as $fs from "fs";
-const $M = require("module");
+import * as $Path from 'path';
+import * as $fs from 'fs';
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+const $M = require('module');
 
 const oldResolver = $M._resolveFilename;
 
-let prjCfg = {
-    "root": "" as string,
-    "prefixes": {} as Record<string, string[]>,
-    "maps": {} as Record<string, string[]>
-};
+interface IPackageConfig {
 
-let disabled = false;
+    root: string;
+
+    prefixes: Record<string, string[]>;
+
+    maps: Record<string, string[]>;
+
+    disabled: boolean;
+}
+
+const pkgConfigs: Record<string, IPackageConfig> = {};
+
+function findPackageRoot(filename: string): string {
+
+    let dirPath = $Path.dirname(filename);
+
+    do {
+        const pkgPath = `${dirPath}/package.json`;
+
+        if ($fs.existsSync(pkgPath)) {
+
+            return dirPath;
+        }
+
+        const parentDir = $Path.dirname(dirPath);
+
+        if (dirPath === parentDir) {
+
+            break;
+        }
+
+        dirPath = parentDir;
+        continue;
+
+    } while (1);
+
+    return '';
+}
 
 $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) {
 
-    const baseDir = $path.dirname(parentModule.filename);
+    const baseDir = findPackageRoot(parentModule.filename);
 
-    if (disabled || baseDir.includes("node_modules")) {
+    let prjCfg = pkgConfigs[baseDir];
 
-        return oldResolver.call(this, req, parentModule, isMain);
-    }
+    if (!prjCfg) {
 
-    if (!prjCfg.root) {
+        pkgConfigs[baseDir] = prjCfg = {
+            'disabled': false,
+            'maps': {},
+            'prefixes': {},
+            'root': baseDir
+        };
 
-        prjCfg.root = baseDir;
-
-        let configPath: string;
+        const configPath: string = $Path.join(prjCfg.root, 'tsconfig.json');
         let config: any;
 
-        do {
+        if ($fs.existsSync(configPath)) {
 
-            configPath = $path.resolve(prjCfg.root, "tsconfig.json");
+            config = (new Function('return ' + $fs.readFileSync(
+                configPath,
+                { 'encoding': 'utf8' }
+            ).trim()))();
 
-            if ($fs.existsSync(configPath)) {
+            if (
+                !config.compilerOptions ||
+                !config.compilerOptions.baseUrl ||
+                !config.compilerOptions.paths
+            ) {
 
-                config = (new Function("return " + $fs.readFileSync(
-                    configPath,
-                    { "encoding": "utf8" }
-                )))();
-
-                if (
-                    !config.compilerOptions ||
-                    !config.compilerOptions.baseUrl ||
-                    !config.compilerOptions.paths
-                ) {
-
-                    config = null;
-
-                    disabled = true;
-
-                    break;
-                }
+                prjCfg.disabled = true;
+            }
+            else {
 
                 config = config.compilerOptions;
 
                 if (!config.rootDir) {
 
-                    config.rootDir = ".";
+                    config.rootDir = '.';
                 }
 
                 if (!config.outDir) {
 
                     config.outDir = config.rootDir;
                 }
-
-                break;
             }
+        }
+        else {
 
-            const newDir = $path.resolve(prjCfg.root, "..");
+            prjCfg.disabled = true;
+        }
 
-            if (newDir === prjCfg.root) {
-
-                break;
-            }
-
-            prjCfg.root = newDir;
-
-        } while (1);
-
-        if (!prjCfg.root || !config) {
+        if (prjCfg.disabled) {
 
             return oldResolver.call(this, req, parentModule, isMain);
         }
 
         if (config.baseUrl) {
 
-            const rootDir = $path.resolve(prjCfg.root, config.rootDir);
-            const outDir = $path.resolve(prjCfg.root, config.outDir);
+            const rootDir = $Path.resolve(prjCfg.root, config.rootDir);
+            const outDir = $Path.resolve(prjCfg.root, config.outDir);
 
             for (const k in config.paths) {
 
-                if (k.endsWith("*")) {
+                if (k.endsWith('*')) {
 
                     prjCfg.prefixes[k.slice(0, -1)] = config.paths[k].map(
-                        (x: string) => $path.resolve(
+                        (x: string) => $Path.resolve(
                             prjCfg.root,
                             config.baseUrl,
                             x.slice(0, -1)
@@ -119,7 +139,7 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
                 else {
 
                     prjCfg.maps[k] = config.paths[k].map(
-                        (x: string) => $path.resolve(
+                        (x: string) => $Path.resolve(
                             prjCfg.root,
                             config.baseUrl,
                             x
@@ -128,6 +148,15 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
                 }
             }
         }
+        else {
+
+            prjCfg.disabled = true;
+        }
+    }
+
+    if (prjCfg.disabled) {
+
+        return oldResolver.call(this, req, parentModule, isMain);
     }
 
     let err;
@@ -166,7 +195,7 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
 
                     return oldResolver.call(
                         this,
-                        $path.resolve(x, req.slice(prefix.length)),
+                        $Path.resolve(x, req.slice(prefix.length)),
                         parentModule,
                         isMain
                     );

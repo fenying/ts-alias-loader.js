@@ -1,0 +1,6 @@
+{
+    "name": "test-2",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "typings": "lib/index.d.ts"
+}

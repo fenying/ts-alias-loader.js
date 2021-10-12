@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Angus.Fenying <fenying@litert.org>
+ * Copyright 2021 Angus.Fenying <fenying@litert.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-// tslint:disable: no-console
-import "../lib";
-import { add } from "@helper/add";
+import '../lib';
+import * as T from 'test-2';
+import { add } from '@helper/add';
 
 console.log(add(123, 333));
+T.print();

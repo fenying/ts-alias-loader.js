@@ -2,16 +2,12 @@
   "compilerOptions": {
 
     "rootDir": "src",
-    "outDir": "./",
+    "outDir": "lib",
 
     "baseUrl": "./src/",
     "paths": {
-      "@helper/*": [
-        "examples/helper/*"
-      ],
-      "@helper-minus": [
-        "examples/minus",
-        "examples/helper/minus"
+      "#/*": [
+        "./*"
       ]
     },
 
@@ -88,8 +84,5 @@
   "exclude": [
     "./*.d.ts",
     "./**/*.d.ts"
-  ],
-  "include": [
-    "./src/**/*.ts"
   ]
 }
