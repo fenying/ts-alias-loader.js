@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Angus.Fenying <fenying@litert.org>
+ * Copyright 2022 Angus.Fenying <fenying@litert.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,11 +86,7 @@ $M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) 
                 { 'encoding': 'utf8' }
             ).trim()))();
 
-            if (
-                !config.compilerOptions ||
-                !config.compilerOptions.baseUrl ||
-                !config.compilerOptions.paths
-            ) {
+            if (!config.compilerOptions?.baseUrl || !config.compilerOptions.paths) {
 
                 prjCfg.disabled = true;
             }
