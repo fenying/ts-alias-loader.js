@@ -16,6 +16,7 @@
 
 import * as $Path from 'path';
 import * as $fs from 'fs';
+import type Module from 'module';
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
 const $M = require('module');
 
@@ -61,7 +62,11 @@ function findPackageRoot(filename: string): string {
     return '';
 }
 
-$M._resolveFilename = function(req: string, parentModule: any, isMain: boolean) {
+$M._resolveFilename = function(req: string, parentModule: Module | undefined | null, isMain: boolean) {
+
+    if (!parentModule) {
+        return oldResolver.call(this, req, parentModule, isMain);
+    }
 
     const baseDir = findPackageRoot(parentModule.filename);
 
