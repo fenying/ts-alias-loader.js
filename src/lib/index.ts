@@ -86,10 +86,12 @@ $M._resolveFilename = function(req: string, parentModule: Module | undefined | n
 
         if ($fs.existsSync(configPath)) {
 
-            config = (new Function('return ' + $fs.readFileSync(
+            const configContent = $fs.readFileSync(
                 configPath,
                 { 'encoding': 'utf8' }
-            ).trim()))();
+            ).trim();
+
+            config = (new Function('return ' + `(${configContent})`))();
 
             if (!config.compilerOptions?.baseUrl || !config.compilerOptions.paths) {
 
