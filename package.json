@@ -1,6 +1,6 @@
 {
   "name": "ts-alias-loader",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A simple loader for TypeScript module alias on Node.js.",
   "main": "lib/index.js",
   "scripts": {
