@@ -62,6 +62,16 @@ function findPackageRoot(filename: string): string {
     return '';
 }
 
+function isComputedRelativePath(path: string): boolean {
+
+    if ($Path.sep === '\\' && path.includes('\\')) { // Windows path
+
+        path = path.replace(/\\/g, '/');
+    }
+
+    return /^\.{1,2}\//.test(path);
+}
+
 $M._resolveFilename = function(req: string, parentModule: Module | undefined | null, isMain: boolean) {
 
     if (!parentModule) {
@@ -93,7 +103,7 @@ $M._resolveFilename = function(req: string, parentModule: Module | undefined | n
 
             config = (new Function('return ' + `(${configContent})`))();
 
-            if (!config.compilerOptions?.baseUrl || !config.compilerOptions.paths) {
+            if (!config.compilerOptions?.paths) {
 
                 prjCfg.disabled = true;
             }
@@ -122,44 +132,50 @@ $M._resolveFilename = function(req: string, parentModule: Module | undefined | n
             return oldResolver.call(this, req, parentModule, isMain);
         }
 
-        if (config.baseUrl) {
-
-            const rootDir = $Path.resolve(prjCfg.root, config.rootDir);
-            const outDir = $Path.resolve(prjCfg.root, config.outDir);
+        if (config.baseUrl == null) {
 
             for (const k in config.paths) {
 
-                if (k.endsWith('*')) {
-
-                    prjCfg.prefixes[k.slice(0, -1)] = config.paths[k].map(
-                        (x: string) => $Path.resolve(
-                            prjCfg.root,
-                            config.baseUrl,
-                            x.slice(0, -1)
-                        ).replace(rootDir, outDir)
-                    );
-                }
-                else {
-
-                    prjCfg.maps[k] = config.paths[k].map(
-                        (x: string) => $Path.resolve(
-                            prjCfg.root,
-                            config.baseUrl,
-                            x
-                        ).replace(rootDir, outDir)
-                    );
+                // allow only computed relative path mapping and absolute path mapping
+                if (config.paths[k].some((v: string) => !$Path.isAbsolute(v) && !isComputedRelativePath(v))) {
+                    prjCfg.disabled = true;
+                    break;
                 }
             }
+
+            if (prjCfg.disabled) {
+
+                return oldResolver.call(this, req, parentModule, isMain);
+            }
         }
-        else {
 
-            prjCfg.disabled = true;
+        const rootDir = $Path.resolve(prjCfg.root, config.rootDir);
+        const outDir = $Path.resolve(prjCfg.root, config.outDir);
+        const baseUrl = config.baseUrl ?? './';
+
+        for (const k in config.paths) {
+
+            if (k.endsWith('*')) {
+
+                prjCfg.prefixes[k.slice(0, -1)] = config.paths[k].map(
+                    (x: string) => $Path.resolve(
+                        prjCfg.root,
+                        baseUrl,
+                        x.slice(0, -1)
+                    ).replace(rootDir, outDir)
+                );
+            }
+            else {
+
+                prjCfg.maps[k] = config.paths[k].map(
+                    (x: string) => $Path.resolve(
+                        prjCfg.root,
+                        baseUrl,
+                        x
+                    ).replace(rootDir, outDir)
+                );
+            }
         }
-    }
-
-    if (prjCfg.disabled) {
-
-        return oldResolver.call(this, req, parentModule, isMain);
     }
 
     let err;
