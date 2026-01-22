@@ -11,3 +11,4 @@
 /.husky/
 /.eslint*
 /commitlint.config.js
+/src/examples/
