@@ -35,7 +35,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
-    "@litert/eslint-plugin-rules": "^0.1.7",
+    "@litert/eslint-plugin-rules": "^0.3.0",
     "@types/node": "^20.12.7",
     "husky": "^9.0.11",
     "typescript": "^5.4.5"
